@@ -8,7 +8,7 @@ import pickle as pkl #import cPickle as pkl
 
 #file path
 dataset_path='data/subject.pkl'
-
+dataset_pathtest = 'data/subject_test.pkl'
 def set_dataset_path(path):
     dataset_path=path
 
@@ -20,13 +20,12 @@ def load_data(max_len,batch_size,n_words=3080,valid_portion=0.1,sort_by_len=True
     print ('load data from %s',dataset_path)
     train_set = np.array(pkl.load(f))
     f.close()
-    print(train_set)
-
-    f = open(dataset_path, 'rb')
+    f = open(dataset_pathtest, 'rb')
     print('load data from %s', dataset_path)
     #train_set = np.array(pkl.load(f))
     test_set = np.array(pkl.load(f))
-    #f.close()
+    f.close()
+    print(train_set)
     print(test_set)
     train_set_x,train_set_y = train_set
 
@@ -38,7 +37,7 @@ def load_data(max_len,batch_size,n_words=3080,valid_portion=0.1,sort_by_len=True
     #shuffle and generate train and valid dataset
     sidx = np.random.permutation(n_samples)
 
-    n_train = int(np.round(n_samples * (1. - valid_portion))) # n_train means that the number of the train set 
+    n_train = int(np.round(n_samples * (1.0 - valid_portion))) # n_train means that the number of the train set
                                                               # or in the other words the size of the train set
 
     valid_set_x = [train_set_x[s] for s in sidx[n_train:]]    # [n_train:] means the locations from 'n_train' to the end 
@@ -53,24 +52,8 @@ def load_data(max_len,batch_size,n_words=3080,valid_portion=0.1,sort_by_len=True
 
 
     #remove unknow words
-    """
     def remove_unk(x):
-       return [[1 if w >= n_words else w for w in sen] for sen in x]
-
-        list_sen = []
-        list_x = []
-        for sen in x:
-            for w in sen:
-                if int(w) >= n_words:
-                    w = 1
-                    list_sen.append(w)
-                else:
-                    list_sen.append(w)
-            list_x.append(list_sen)
-
-        return list_x
-
-
+        return [[1 if w >= n_words else w for w in sen] for sen in x]
 
     test_set_x, test_set_y = test_set
     valid_set_x, valid_set_y = valid_set
@@ -79,9 +62,9 @@ def load_data(max_len,batch_size,n_words=3080,valid_portion=0.1,sort_by_len=True
     train_set_x = remove_unk(train_set_x)
     valid_set_x = remove_unk(valid_set_x)
     test_set_x = remove_unk(test_set_x)
-    """
 
-    """
+
+
     def len_argsort(seq):
         return sorted(range(len(seq)), key=lambda x: len(seq[x]))
 
@@ -102,7 +85,7 @@ def load_data(max_len,batch_size,n_words=3080,valid_portion=0.1,sort_by_len=True
     train_set=(train_set_x,train_set_y)
     valid_set=(valid_set_x,valid_set_y)
     test_set=(test_set_x,test_set_y)
-    """
+
 
 
 

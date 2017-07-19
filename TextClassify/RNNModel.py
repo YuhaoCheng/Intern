@@ -107,11 +107,11 @@ class RNN_Model(object):
         self.lr = tf.Variable(0.0,trainable=False)
 
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.cost, tvars),
-                                      config.max_grad_norm)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.cost, tvars),config.max_grad_norm)
 
 
         # Keep track of gradient values and sparsity (optional)
+        """""
         grad_summaries = []
         for g, v in zip(grads, tvars):
             if g is not None:
@@ -122,7 +122,7 @@ class RNN_Model(object):
         self.grad_summaries_merged = tf.summary.merge(grad_summaries)
 
         self.summary =tf.summary.merge([loss_summary,accuracy_summary,self.grad_summaries_merged])
-        
+        """
 
 
         optimizer = tf.train.GradientDescentOptimizer(self.lr)

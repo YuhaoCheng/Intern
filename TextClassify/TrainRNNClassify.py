@@ -1,11 +1,10 @@
-import tensorflow as tf
-import numpy as np
 import os
 import time
-import datetime
-from RNNModel import RNN_Model
-import data_helper
 
+import tensorflow as tf
+
+import data_helper
+from RNNModel import RNN_Model
 
 flags =tf.app.flags
 FLAGS = flags.FLAGS
@@ -14,24 +13,27 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer('batch_size',64,'the batch_size of the training procedure')
 
 flags.DEFINE_float('lr',0.1,'the learning rate')
-flags.DEFINE_float('lr_decay',0.5,'the learning rate decay')
+flags.DEFINE_float('lr_decay',0.3,'the learning rate decay') # change to small orignal is 0.5
 
-flags.DEFINE_integer('vocabulary_size',20000,'vocabulary_size')
+flags.DEFINE_integer('vocabulary_size',3080,'vocabulary_size')
 
-flags.DEFINE_integer('emdedding_dim',128,'embedding dim')
+flags.DEFINE_integer('emdedding_dim',200,'embedding dim')
+
 flags.DEFINE_integer('hidden_neural_size',128,'LSTM hidden neural size')
+
 flags.DEFINE_integer('hidden_layer_num',1,'LSTM hidden layer num')
 
 flags.DEFINE_string('dataset_path','data/subject.pkl','dataset path')
 
 flags.DEFINE_integer('max_len',200,'max_len of training sentence')
+
 flags.DEFINE_integer('valid_num',100,'epoch num of validation')
 flags.DEFINE_integer('checkpoint_num',1000,'epoch num of checkpoint')
 flags.DEFINE_float('init_scale',0.1,'init scale')
 #flags.DEFINE_integer('class_num',2,'class num')
-flags.DEFINE_integer('class_num',9,'class num')
-flags.DEFINE_float('keep_prob',0.5,'dropout rate')
-flags.DEFINE_integer('num_epoch',300,'num epoch')
+flags.DEFINE_integer('class_num',8,'class num')
+flags.DEFINE_float('keep_prob',0.8,'dropout rate') # too small, change to 0.8
+flags.DEFINE_integer('num_epoch',1000,'num epoch')
 flags.DEFINE_integer('max_decay_epoch',30,'num epoch')
 flags.DEFINE_integer('max_grad_norm',10,'max_grad_norm')
 flags.DEFINE_string('out_dir',os.path.abspath(os.path.join(os.path.curdir,"runs")),'output directory')
@@ -64,12 +66,14 @@ def evaluate(model,session,data,global_steps=None,summary_writer=None):
 
     correct_num=0
     total_num=len(data[0])
-    for step, (x,y,mask_x) in enumerate(data_helper.batch_iter(data,batch_size=FLAGS.batch_size)):
+    print('The steps: %i The total number is:%d\n'%(global_steps,total_num))
+
+    for step, (x,y,mask_x) in enumerate(data_helper.batch_iter(data, batch_size=FLAGS.batch_size)):
 
          fetches = model.correct_num
          feed_dict={}
          feed_dict[model.input_data]=x
-         feed_dict[model.target]=tf.cast(y,tf.float32)
+         feed_dict[model.target]=y
          feed_dict[model.mask_x]=mask_x
          model.assign_new_batch_size(session,len(x))
          state = session.run(model._initial_state)
@@ -77,11 +81,12 @@ def evaluate(model,session,data,global_steps=None,summary_writer=None):
             feed_dict[c]=state[i].c
             feed_dict[h]=state[i].h
          count=session.run(fetches,feed_dict)
-         correct_num+=count
+         correct_num= correct_num + count
 
+    print('The correct number of %i is %d'%(global_steps,correct_num))
     accuracy=float(correct_num)/total_num
-    print(model.correct_num + 'The number of correct in Line 79 of the TrainRNNClassify')
-    print(model.accuracy + 'The accuracy of the model now in Line 80 of the TrainRNNClassify')
+    #print(model.correct_num + 'The number of correct in Line 79 of the TrainRNNClassify')
+    #print(model.accuracy + 'The accuracy of the model now in Line 80 of the TrainRNNClassify')
     dev_summary = tf.summary.scalar('dev_accuracy',accuracy)
     dev_summary = session.run(dev_summary)
     if summary_writer:
@@ -90,22 +95,22 @@ def evaluate(model,session,data,global_steps=None,summary_writer=None):
     return accuracy
 
 def run_epoch(model,session,data,global_steps,valid_model,valid_data,train_summary_writer=None,valid_summary_writer=None):
-    for step, (x,y,mask_x) in enumerate(data_helper.batch_iter(data,batch_size=FLAGS.batch_size)):
+    for step, (x,y,mask_x) in enumerate(data_helper.batch_iter(data, batch_size=FLAGS.batch_size)):
 
         feed_dict={}
         feed_dict[model.input_data]=x
         feed_dict[model.target]=y
         feed_dict[model.mask_x]=mask_x
         model.assign_new_batch_size(session,len(x))
-        fetches = [model.cost,model.accuracy,model.train_op,model.summary]
+        fetches = [model.cost,model.accuracy,model.train_op]#,model.summary]
         state = session.run(model._initial_state)
         for i , (c,h) in enumerate(model._initial_state):
             feed_dict[c]=state[i].c
             feed_dict[h]=state[i].h
-        cost,accuracy,_,summary= session.run(fetches,feed_dict)  # cost,accuracy,_,summary
-        train_summary_writer.add_summary(summary,global_steps)
-        train_summary_writer.flush()
-        valid_accuracy=evaluate(valid_model,session,valid_data,global_steps,valid_summary_writer)
+        cost,accuracy,_= session.run(fetches,feed_dict)  #cost,accuracy,_,summary
+        #train_summary_writer.add_summary(summary,global_steps)
+        #train_summary_writer.flush()
+        valid_accuracy=evaluate(valid_model,session,valid_data,global_steps)#,valid_summary_writer)
         if(global_steps%5==0):
             print("the %i step, train cost is: %f and the train accuracy is %f and the valid accuracy is %f"%(global_steps,cost,accuracy,valid_accuracy))
         global_steps+=1
@@ -125,7 +130,7 @@ def train_step():
     eval_config=Config()
     eval_config.keep_prob=1.0
 
-    train_data,valid_data,test_data=data_helper.load_data(FLAGS.max_len,batch_size=config.batch_size)
+    train_data,valid_data,test_data= data_helper.load_data(FLAGS.max_len, batch_size=config.batch_size)
 
     print("begin training")
 
